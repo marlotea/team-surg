@@ -206,14 +206,6 @@ JOINT_NAMES = [
     'left_contour_1',
 ]
 
-# POSE ABLATION 
-pelvic_pose = ['pelvis', 'left_hip','right_hip']
-arm_pose = ['left_elbow','right_elbow','left_wrist','right_wrist']
-head_pose = ["head"]
-thorax_pose = ['left_shoulder','right_shoulder', 'left_collar', 'right_collar', 'neck'] 
-leg_pose = ['left_knee','right_knee','left_ankle','right_ankle','left_foot','right_foot']
-spine_pose = ['spine1', 'spine2', 'spine3',]
-
 # JOINT INDIVIDUAL ABLATION [Head/Hand Joints] 
 head_struct_joints = ['nose', 'neck'] 
 eye_joints = ['right_eye', 'left_eye']
@@ -229,3 +221,50 @@ finger_joints = ['left_index1','left_index2','left_index3','left_middle1','left_
 shoulder_joints = ['left_shoulder','right_shoulder']
 lower_body_joints_without_feet = ["left_hip", "right_hip", "left_knee", "right_knee"]
 nose_joints = [ 'nose1','nose2','nose3','nose4','right_nose_2','right_nose_1','nose_middle', 'left_nose_1','left_nose_2']
+
+# POSE ABLATION 
+pelvic_pose = ['pelvis', 'left_hip','right_hip']
+arm_pose = ['left_elbow','right_elbow','left_wrist','right_wrist']
+head_pose = ["head"]
+thorax_pose = ['left_shoulder','right_shoulder', 'left_collar', 'right_collar', 'neck'] 
+leg_pose = ['left_knee','right_knee','left_ankle','right_ankle','left_foot','right_foot']
+spine_pose = ['spine1', 'spine2', 'spine3',]
+
+pelvic_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in pelvic_pose]
+arm_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in arm_pose]
+head_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in head_pose]
+thorax_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in thorax_pose]
+leg_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in leg_pose]
+spine_indices_pose = [SMPL_JOINT_NAMES.index(joint) for joint in spine_pose]
+
+
+
+# JOINT CLASS ABLATION 
+pelvic_joints = ['pelvis', 'left_hip','right_hip']
+arm_joints = ['left_elbow','right_elbow','left_wrist','right_wrist']
+head_joints = ["head",'jaw','nose','right_eye','left_eye','right_ear','left_ear']
+thorax_joints = ['left_shoulder','right_shoulder', 'left_collar', 'right_collar', 'neck'] 
+leg_joints = ['left_knee','right_knee','left_ankle','right_ankle','left_foot','right_foot']
+spine_joints = ['spine1', 'spine2', 'spine3',]
+
+pelvic_indices = [JOINT_NAMES.index(joint) for joint in pelvic_joints]
+arm_indices = [JOINT_NAMES.index(joint) for joint in arm_joints]
+head_indices = [JOINT_NAMES.index(joint) for joint in head_joints]
+thorax_indices = [JOINT_NAMES.index(joint) for joint in thorax_joints]
+leg_indices = [JOINT_NAMES.index(joint) for joint in leg_joints]
+spine_indices = [JOINT_NAMES.index(joint) for joint in spine_joints]
+
+
+
+# JOINT INDIVIDUAL ABLATION [Head/Hand Joints] 
+head_struct_joints = ['nose', 'neck'] 
+eye_joints = ['right_eye', 'left_eye']
+ear_joints = ['right_ear', 'left_ear'] 
+elbow_joints = ['left_elbow','right_elbow',] 
+wrist_joints = ['left_wrist','right_wrist'] 
+
+head_struct_indices = [JOINT_NAMES.index(joint) for joint in head_struct_joints]
+eye_indices = [JOINT_NAMES.index(joint) for joint in eye_joints]
+ear_indices = [JOINT_NAMES.index(joint) for joint in ear_joints]
+elbow_indices = [JOINT_NAMES.index(joint) for joint in elbow_joints]
+wrist_indices = [JOINT_NAMES.index(joint) for joint in wrist_joints]

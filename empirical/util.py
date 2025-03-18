@@ -1,7 +1,7 @@
 import os
 import torch
 import numpy as np
-import pickle
+import pickle5 as pickle 
 import io
 from tqdm import tqdm
 
