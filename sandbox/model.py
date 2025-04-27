@@ -1,41 +1,41 @@
 import pytorch_lightning as pl
 import torch
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, WeightedRandomSampler, DistributedSampler, get_worker_info
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import numpy as np
 from metrics import get_metrics_multiclass, get_metrics
+from dataset import MixerDataset
 import os 
 import pandas as pd
 import pickle5 as pickle 
 from net import MlpMixer
-from CNN3D import C3D
 import torch.nn as nn
-from dataset import MixerDataset, IterativeDataset
-import torch.distributed as dist
+from dataset import MixerDataset
 
 
 def get_task(args):
     return MixerTask(args)
 
 def load_task(ckpt_path, **kwargs):
-    return MixerTask.load_from_checkpoint(ckpt_path, **kwargs)
+    task = MixerTask(kwargs)
+    return task.load_from_checkpoint(ckpt_path, **kwargs)
 
 class MixerTask(pl.LightningModule):
     """Standard interface for the trainer to interact with the model."""
-    def __init__(self, args):
+    def __init__(self, params):
         super().__init__()
-        self.save_hyperparameters(vars(args))
-        time = args.time
-        people = args.people
-        joints = args.joints
-        channels = 3
-        num_classes = args.num_classes
+        self.save_hyperparameters(params)
+        hmr_embedd_dim = self.hparams.get('embedd_dim', 0) 
+        seq_len = self.hparams.get('seq_len', 145) 
+        num_mlp_blocks = self.hparams.get('num_mlp_blocks', 8) 
+        mlp_ratio = self.hparams.get('mlp_ratio', (0.5, 4.0)) 
+        dropout_prob = self.hparams.get('dropout_prob', 0.0) 
+        num_classes = self.hparams.get('num_classes', 2) 
         self.num_classes = num_classes
-        self.model = C3D(time, people, joints, channels, num_classes)
-        self.val_metrics = []
-        self.test_metrics = []
-        self.loss = nn.BCELoss()
-    
+        self.model = MlpMixer(hmr_embedd_dim=hmr_embedd_dim, seq_len=seq_len, num_classes=num_classes,
+                              drop_path_rate=dropout_prob, mlp_ratio=mlp_ratio, num_blocks=num_mlp_blocks)
+        self.loss = nn.CrossEntropyLoss()
+
     def forward(self, x):
         return self.model(x.to(torch.float32)) #Necessary to prevent conversion issues ) 
 
@@ -52,7 +52,6 @@ class MixerTask(pl.LightningModule):
         logits = self.forward(x) 
         loss = self.loss(logits, y.long())
         self.log("train_loss", loss)
-        breakpoint()
         return {'loss': loss, 'log': {'train_loss': loss}}
 
     def validation_step(self, batch, batch_nb):
@@ -60,12 +59,9 @@ class MixerTask(pl.LightningModule):
         logits = self.forward(x) 
         loss = self.loss(logits, y.long())
         probs = torch.softmax(logits, dim=1)
-        metrics = {'labels': y, 'logits': logits, 'probs': probs, 'val_loss': loss}
-        breakpoint()
-        self.val_metrics.append(metrics)
-        return metrics
+        return {'labels': y, 'logits': logits, 'probs': probs, 'val_loss': loss}
 
-    def on_validation_epoch_end(self):
+    def validation_epoch_end(self, outputs):
         """
         Aggregate and return the validation metrics
         Args:
@@ -79,7 +75,6 @@ class MixerTask(pl.LightningModule):
                               and metrics.csv
         """
         print('validation epoch end')
-        outputs = self.val_metrics
         avg_loss = torch.stack([batch['val_loss'] for batch in outputs]).mean()
         labels = torch.cat([batch['labels'] for batch in outputs])
         probs = torch.cat([batch['probs'] for batch in outputs])
@@ -95,21 +90,11 @@ class MixerTask(pl.LightningModule):
             metrics = get_metrics_multiclass(labels, probs, metrics_strategy) 
         for metric_name, metric_value in metrics.items():
             self.log(f'val_{metric_name}', metric_value)
-            
-        self.val_metrics.clear()
 
     def test_step(self, batch, batch_nb):
-        x, y = batch["embedding_seq"], batch["label"].to(torch.float32)
-        logits = self.forward(x) 
-        loss = self.loss(logits, y.long())
-        probs = torch.softmax(logits, dim=1)
-        metrics = {'labels': y, 'logits': logits, 'probs': probs, 'val_loss': loss}
-        self.test_metrics.append(metrics)
-        return metrics
+        return self.validation_step(batch, batch_nb) 
 
-    def on_test_epoch_end(self):
-        
-        outputs = self.test_metrics
+    def test_epoch_end(self, outputs):
         avg_loss = torch.stack([batch['val_loss'] for batch in outputs]).mean()
         labels = torch.cat([batch['labels'] for batch in outputs])
         logits = torch.cat([batch['logits'] for batch in outputs])
@@ -128,8 +113,6 @@ class MixerTask(pl.LightningModule):
             self.log(f'test_{metric_name}', metric_value)
         metrics['default'] = metrics['auprc']
 
-        self.test_metrics.clear()
-        
         return {'avg_test_loss': avg_loss}
 
     def configure_optimizers(self):
@@ -146,8 +129,7 @@ class MixerTask(pl.LightningModule):
     def train_dataloader(self):
         oversample = self.hparams['oversample']
         dataset_path = self.hparams.get('dataset_path', "")
-        dataset = IterativeDataset(dataset_path, 'train')  
-        train_sampler = DistributedSampler(dataset, shuffle=True)  # Ensures correct data distribution
+        dataset = MixerDataset(dataset_path, 'train')  
 
         #Create oversampling weights 
         if oversample:
@@ -172,44 +154,18 @@ class MixerTask(pl.LightningModule):
         else:
             sampler = None
             shuffle = True
-            
-        if dist.is_initialized():
-            train_sampler = DistributedSampler(dataset, shuffle=True)  # Ensures correct data distribution
-            drop = True
-        else: 
-            train_sampler = None
-            drop = False
-        breakpoint()
-        return DataLoader(dataset, shuffle=shuffle, batch_size=self.hparams['batch_size'], num_workers=8, sampler=train_sampler, drop_last=drop, worker_init_fn=self.worker_init_fn)
+        return DataLoader(dataset, shuffle=shuffle, batch_size=self.hparams['batch_size'], num_workers=8, sampler=sampler)
 
     def val_dataloader(self):
         dataset_path = self.hparams.get('dataset_path', "")
-        dataset = IterativeDataset(dataset_path, 'valid') 
-        if dist.is_initialized():
-            train_sampler = DistributedSampler(dataset, shuffle=True)  # Ensures correct data distribution
-            drop = True
-        else: 
-            train_sampler = None
-            drop = False
-        return DataLoader(dataset, shuffle=False, batch_size=self.hparams['batch_size'], num_workers=8, drop_last=drop, sampler= train_sampler, worker_init_fn=self.worker_init_fn)
+        dataset = MixerDataset(dataset_path, 'valid') 
+        return DataLoader(dataset, shuffle=False, batch_size=self.hparams['batch_size'], num_workers=8)
 
     def test_dataloader(self):
         dataset_path = self.hparams.get('dataset_path', "")
-        dataset = IterativeDataset(dataset_path, 'test') 
-        if dist.is_initilized():
-            train_sampler = DistributedSampler(dataset, shuffle=True)  # Ensures correct data distribution
-            drop = True
-        else:
-            drop = False
-            train_sampler = None
-        return DataLoader(dataset, shuffle = False, batch_size = self.hparams['batch_size'], drop_last=drop, sampler= train_sampler, num_workers = 8, worker_init_fn=self.worker_init_fn) #fix num workers 
+        dataset = MixerDataset(dataset_path, 'test') 
+        return DataLoader(dataset, shuffle=False, batch_size=self.hparams['batch_size'], num_workers=8)
 
-    @staticmethod
-    def worker_init_fn(worker_id):
-        worker_info = get_worker_info()
-        if worker_info is not None:
-            torch.manual_seed(worker_info.seed)  # Ensures different seeds per worker
-            
 #HELPER FUNCTIONS 
 def write_pickle(data_object, path):
     with open(path, 'wb') as handle:
