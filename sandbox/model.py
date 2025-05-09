@@ -59,6 +59,7 @@ class MixerTask(pl.LightningModule):
         logits = self.forward(x) 
         loss = self.loss(logits, y.long())
         probs = torch.softmax(logits, dim=1)
+        breakpoint() 
         return {'labels': y, 'logits': logits, 'probs': probs, 'val_loss': loss}
 
     def validation_epoch_end(self, outputs):

@@ -1,21 +1,130 @@
+#Base Imports 
 import math
 from functools import partial
 import torch
 import torch.nn as nn
-
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.layers import PatchEmbed, Mlp, GluMlp, GatedMlp, DropPath, lecun_normal_, to_2tuple
-
 import collections.abc
 import math
 import re
 from collections import defaultdict
 from itertools import chain
 from typing import Any, Callable, Dict, Iterator, Tuple, Type, Union
-
 import torch
 from torch import nn as nn
 from torch.utils.checkpoint import checkpoint
+
+#GCN Imports
+import os
+import urllib.request
+from urllib.error import HTTPError
+import torch.nn.functional as F
+import torch.optim as optim
+import torch_geometric
+import torch_geometric.data as geom_data
+import torch_geometric.nn as geom_nn
+gnn_layer_by_name = {"GCN": geom_nn.GCNConv, "GAT": geom_nn.GATConv, "GraphConv": geom_nn.GraphConv}
+
+""" 
+Implementation Breakdown:
+1. Create and install conda env to run the following command:
+ - Create a weights and biases account and enter login within terminal after pip install 
+ - cliff_base main.py train --dataset_path /pasteur/u/bencliu/baseline/experiments/simulation/mixer_metadata/ablation/action_dataset_joints_leg_sampled_50.pkl --seq_len 50 --embedd_dim 84 --batch_size 32 --exp_name abl_seq_pelvis_arm_head_thorax_spine_leg_weighted_seq_50
+2. Run the below sandbox function and set breakpoints at the __init__ and _forward__ functions in the GNNModel class to inspect dimensions 
+3. [ASYNC] Abstraction of the .pkl reference to matrices of nodes and edge matrices 
+    - Input PKL > Output Matrices
+    - *can be run in a separate sandbox*
+    - Edge matrix creation logic (using pre-mapped indices for connected joints) and *MUST* account for 1) temporal and 2) spatial connections 
+    - Generate pre-mapped indices automatically based on joint selections (i.e. remapping conections if we exclude the spine/thorax)
+4. [ASYNC] Dataloader abstraction and adaptation to torch_geometric formats 
+    - Input Matrices from (3) > Output PyTorch Geometric Dataset 
+    - *can be run in a separate sandbox* 
+    = Note: Need to load in (number of nodes, number of features) and an additional ID matrix that maps each node to which "graph" it belongs to 
+5. [ASYNC] Hyperparam tuning/initial experiments with the full pipeline 
+    - Starting Params
+        - c_in = 3
+        - c_hidden = 128 
+        - c_out = 3 
+        - num_layers = 5 
+    - Tuning Params:
+        - c_hidden
+        - num_layers 
+        - [Meta] adjacency contruction
+            - weights
+            - number of connections
+            - temporal vs. spatial connections
+"""
+
+class GNNModel(nn.Module):
+    def __init__(
+        self,
+        c_in=3,
+        c_hidden=16,
+        c_out=3,
+        num_layers=2,
+        layer_name="GCN",
+        dp_rate=0.1,
+        **kwargs,
+    ):
+        """GNNModel.
+
+        Args:
+            c_in: Dimension of input features
+            c_hidden: Dimension of hidden features
+            c_out: Dimension of the output features. Usually number of classes in classification
+            num_layers: Number of "hidden" graph layers
+            layer_name: String of the graph layer to use
+            dp_rate: Dropout rate to apply throughout the network
+            kwargs: Additional arguments for the graph layer (e.g. number of heads for GAT)
+
+        """
+        super().__init__()
+        gnn_layer = gnn_layer_by_name[layer_name]
+
+        layers = []
+        in_channels, out_channels = c_in, c_hidden
+        for l_idx in range(num_layers - 1):
+            layers += [
+                gnn_layer(in_channels=in_channels, out_channels=out_channels, **kwargs),
+                nn.ReLU(inplace=True),
+                nn.Dropout(dp_rate),
+            ]
+            in_channels = c_hidden
+        layers += [gnn_layer(in_channels=in_channels, out_channels=c_out, **kwargs)]
+        breakpoint() 
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, x, edge_index):
+        """Forward.
+
+        Args:
+            x: Input features per node
+            edge_index: List of vertex index pairs representing the edges in the graph (PyTorch geometric notation)
+
+        """
+        for layer in self.layers:
+            # For graph layers, we need to add the "edge_index" tensor as additional input
+            # All PyTorch Geometric graph layer inherit the class "MessagePassing", hence
+            # we can simply check the class type.
+            breakpoint() 
+            if isinstance(layer, geom_nn.MessagePassing):
+                x = layer(x, edge_index)
+                breakpoint() 
+            else:
+                x = layer(x)
+                breakpoint() 
+        return x
+
+def gnn_sandbox_function():
+    model = GNNModel() 
+    input = torch.rand((28, 3))
+    edge_matrix = torch.tensor([
+        [0, 1, 1, 2],  # Source nodes
+        [1, 0, 2, 1]   # Target nodes
+    ])
+    output = model(input) 
+    breakpoint() 
 
 def named_apply(
         fn: Callable,
@@ -147,8 +256,10 @@ class MlpMixer(nn.Module):
         return x if pre_logits else self.head(x)
 
     def forward(self, x):
-        x = self.forward_features(x)
-        x = self.forward_head(x)
+        breakpoint() 
+        x = self.forward_features(x) # torch.Size([32, 50, 84]) (batch_size, seq_len, embedd_dim)
+        x = self.forward_head(x) # torch.Size([32, 3]) 
+        breakpoint() 
         return x
 
 
