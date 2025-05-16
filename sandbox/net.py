@@ -6,7 +6,6 @@ import torch.nn as nn
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.layers import PatchEmbed, Mlp, GluMlp, GatedMlp, DropPath, lecun_normal_, to_2tuple
 import collections.abc
-import math
 import re
 from collections import defaultdict
 from itertools import chain
