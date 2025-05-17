@@ -1,0 +1,12 @@
+#conda create --name JDPLTeamSurg python=3.12.7
+#pip install -r requirements.txt
+timm
+torch
+torch_geometric
+fire
+pytorch_lightning
+matplotlib
+seaborn
+scikit-spatial
+numpy
+scikit-learn
