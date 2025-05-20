@@ -29,6 +29,55 @@ MAIN_JOINTS = [
     'left_ear',
 ]
 
+JOINT_NAMES_GNN_ABLATIONS = [
+    'pelvis', 'left_hip', 'right_hip',
+    'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist',
+    'head', 'jaw', 'nose', 'right_eye', 'left_eye', 'right_ear', 'left_ear',
+    'left_shoulder', 'right_shoulder', 'left_collar', 'right_collar', 'neck',
+    'spine1', 'spine2', 'spine3',
+    'left_knee', 'right_knee', 'left_ankle', 'right_ankle', 'left_foot', 'right_foot'
+]
+
+
+SPATIAL_EDGES = [
+    # Head cluster
+    ('left_eye', 'head'), ('right_eye', 'head'), ('left_ear', 'head'),
+    ('right_ear', 'head'), ('nose', 'head'), ('jaw', 'head'),
+
+    # Left arm
+    ('left_wrist', 'left_elbow'), ('left_elbow', 'left_shoulder'),
+    ('left_shoulder', 'left_collar'),
+
+    # Right arm
+    ('right_wrist', 'right_elbow'), ('right_elbow', 'right_shoulder'),
+    ('right_shoulder', 'right_collar'),
+
+    # Spine
+    ('spine1', 'spine2'), ('spine2', 'spine3'),
+
+    # Pelvis/hip
+    ('right_hip', 'pelvis'), ('left_hip', 'pelvis'), ('pelvis', 'spine3'),
+
+    # Legs
+    ('right_foot', 'right_ankle'), ('right_ankle', 'right_knee'), ('right_knee', 'right_hip'),
+    ('left_foot', 'left_ankle'), ('left_ankle', 'left_knee'), ('left_knee', 'left_hip'),
+
+    # Shoulder to spine
+    ('right_collar', 'spine1'), ('left_collar', 'spine1'),
+
+    # Head to spine
+    ('head', 'spine1'),
+]
+
+JOINT_GROUPS = {
+        "pelvic_joints": ['pelvis', 'left_hip', 'right_hip'],
+        "arm_joints": ['left_elbow','right_elbow','left_wrist','right_wrist'],
+        "head_joints": ['head','jaw','nose','right_eye','left_eye','right_ear','left_ear'],
+        "thorax_joints": ['left_shoulder','right_shoulder','left_collar','right_collar','neck'],
+        "leg_joints": ['left_knee','right_knee','left_ankle','right_ankle','left_foot','right_foot'],
+        "spine_joints": ['spine1', 'spine2', 'spine3']
+    }
+
 # #Updated categories 
 # pelvic_joints = ['pelvis', 'left_hip','right_hip']
 # arm_joints = ['left_elbow','right_elbow','left_wrist','right_wrist']

@@ -1,16 +1,29 @@
 import json
 import os
+import io
 from os.path import join
 import torch
 from pytorch_lightning.loggers import CSVLogger, WandbLogger 
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+import pickle
 
 
 LIGHTNING_CKPT_PATH = 'lightning_logs/version_0/checkpoints/'
 LIGHTNING_TB_PATH = 'lightning_logs/version_0/'
 LIGHTNING_METRICS_PATH = 'lightning_logs/version_0/metrics.csv'
 
+#Unpickling utils
+class CPU_Unpickler(pickle.Unpickler):
+  def find_class(self, module, name): 
+    if module == 'torch.storage' and name == '_load_from_bytes':
+      return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+    else:
+      return super().find_class(module, name )
 
+def read_pickle(path):
+    with open(path, 'rb') as f:
+      return CPU_Unpickler(f).load()
+  
 def get_ckpt_dir(save_path, exp_name):
     return os.path.join(save_path, exp_name, "ckpts")
 
