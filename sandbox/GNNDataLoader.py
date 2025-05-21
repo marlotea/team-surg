@@ -102,7 +102,7 @@ class GNNDataset(Dataset):
         filtered_edges = GNNDataset.filter_edges(filtered_joint_list)
         edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames)
         x = GNNDataset.build_node_list(self.exclude_groups, frames)
-        y = frames[-2]
+        y = frames[-2] #action label 
         return x, edge_list, y
 
 
