@@ -22,7 +22,7 @@ class GNNDataset(Dataset):
         num_frames: int = 150
     ):
         super().__init__()
-        self.dataset = read_pickle(dataset_path)[split]
+        self.dataset = read_pickle(dataset_path)[split][0]
         self.exclude_groups = exclude_groups
         self.num_frames = num_frames
     
