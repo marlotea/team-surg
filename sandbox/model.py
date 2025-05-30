@@ -219,14 +219,18 @@ class GNNTask(pl.LightningModule):
         self.log("train_loss", loss)
         return {'loss': loss, 'log': {'train_loss': loss}}
     
+    
     def validation_step(self, batch, batch_nb):
         logits = self.forward(batch.x, batch.edge_index, batch.batch) #[num_graphs, num_classes]
         loss = self.loss(logits, batch.y.long()) #[dim(y) == num_classes]
         probs = torch.softmax(logits, dim=1)
+        if not hasattr(self, "val_outputs"):
+            self.val_outputs = []
         self.log({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss})
-        return {'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss} #TODO - See if I can remove this
+        self.val_outputs.append({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss})
+        
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         """
         Aggregate and return the validation metrics
         Args:
@@ -240,45 +244,77 @@ class GNNTask(pl.LightningModule):
                               and metrics.csv
         """
         print('validation epoch end')
-        avg_loss = torch.stack([batch['val_loss'] for batch in outputs]).mean()
-        labels = torch.cat([batch['labels'] for batch in outputs])
-        probs = torch.cat([batch['probs'] for batch in outputs])
+        if not hasattr(self, "val_outputs") or len(self.val_outputs) == 0:
+            return
+
+        # Concatenate predictions
+        labels = torch.cat([batch['labels'] for batch in self.val_outputs])
+        probs = torch.cat([batch['probs'] for batch in self.val_outputs])
+        losses = torch.stack([o["loss"] for o in self.val_outputs]).mean()
+        
+        self.log("avg_validation_loss", losses)
+
+        # Compute metrics
         metrics_strategy = self.hparams['metrics_strategy']
-
-        #Log Val Accuracy and Loss
-        self.log("val_loss", avg_loss.item())
-
-        #Log Val Metrics
         if self.num_classes == 2:
             metrics = get_metrics(labels, probs)
         else:
-            metrics = get_metrics_multiclass(labels, probs, metrics_strategy) 
+            metrics = get_metrics_multiclass(labels, probs, metrics_strategy)
+
+        # Log all computed metrics
         for metric_name, metric_value in metrics.items():
-            self.log(f'val_{metric_name}', metric_value)
+            self.log(f'val_{metric_name}', metric_value, prog_bar=True)
+
+        # Clean up memory
+        del self.val_outputs
+
 
     def test_step(self, batch, batch_nb):
-        return self.validation_step(batch, batch_nb) 
+        logits = self.forward(batch.x, batch.edge_index, batch.batch) #[num_graphs, num_classes]
+        loss = self.loss(logits, batch.y.long()) #[dim(y) == num_classes]
+        probs = torch.softmax(logits, dim=1)
+        if not hasattr(self, "test_outputs"):
+            self.test_outputs = []
+        self.log({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss}, prog_bar=False, on_step=True, on_epoch=False)
+        self.test_outputs.append({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss})
 
-    def test_epoch_end(self, outputs):
-        avg_loss = torch.stack([batch['val_loss'] for batch in outputs]).mean()
-        labels = torch.cat([batch['labels'] for batch in outputs])
-        logits = torch.cat([batch['logits'] for batch in outputs])
-        probs = torch.cat([batch['probs'] for batch in outputs])
-        metrics_strategy = self.hparams['metrics_strategy']
+    def on_test_epoch_end(self, outputs):
+            """
+        Aggregate and return the validation metrics
+        Args:
+        outputs: A list of dictionaries of metrics from `validation_step()'
+        Returns: None
+        Returns:
+            A dictionary of loss and metrics, with:
+                val_loss (required): validation_loss
+                log: metrics to be logged to the TensorBoard and metrics.csv
+                progress_bar: metrics to be logged to the progress bar
+                              and metrics.csv
+        """
+            print('test epoch end')
+            if not hasattr(self, "test_outputs") or len(self.val_outputs) == 0:
+                return
 
-        #Log Test Accuracy and Loss
-        self.log("test_loss", avg_loss)
+            # Concatenate predictions
+            labels = torch.cat([batch['labels'] for batch in self.val_outputs])
+            probs = torch.cat([batch['probs'] for batch in self.val_outputs])
+            losses = torch.stack([batch["loss"] for batch in self.val_outputs]).mean()
 
-        #Log Test Metrics
-        if self.num_classes == 2:
-            metrics = get_metrics(labels, probs)
-        else:
-            metrics = get_metrics_multiclass(labels, probs, metrics_strategy) 
-        for metric_name, metric_value in metrics.items():
-            self.log(f'test_{metric_name}', metric_value)
-        metrics['default'] = metrics['auprc']
-        self.log({'avg_test_loss': avg_loss})
-        return {'avg_test_loss': avg_loss} #this might not do anything, not supported for newer versions
+            # Compute metrics
+            self.log("avg_test_loss", losses)
+            
+            metrics_strategy = self.hparams['metrics_strategy']
+            if self.num_classes == 2:
+                metrics = get_metrics(labels, probs)
+            else:
+                metrics = get_metrics_multiclass(labels, probs, metrics_strategy)
+
+            # Log all computed metrics
+            for metric_name, metric_value in metrics.items():
+                self.log(f'val_{metric_name}', metric_value, prog_bar=True)
+
+            # Clean up memory
+            del self.val_outputs
     
     def configure_optimizers(self):
         learn_rate = self.hparams['learn_rate']
