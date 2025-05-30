@@ -60,13 +60,13 @@ def train(save_dir="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_res
         accelerator='ddp'
          
         
-    trainer = Trainer(gpus=gpus,
+    trainer = Trainer(devices=gpus,
                       accelerator=accelerator,
                       precision="bf16-mixed",
                       logger=logger,
                       callbacks=[get_early_stop_callback(patience),
                                  get_ckpt_callback(save_dir, exp_name, "ckpt")],
-                      weights_save_path=os.path.join(save_dir, exp_name),
+                     default_root_dir=os.path.join(save_dir, exp_name),
                       gradient_clip_val=gradient_clip_val,
                       limit_train_batches=limit_train_batches,
                       max_epochs=1,

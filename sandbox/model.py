@@ -220,12 +220,11 @@ class GNNTask(pl.LightningModule):
         return {'loss': loss, 'log': {'train_loss': loss}}
     
     def validation_step(self, batch, batch_nb):
-        x, y = batch["embedding_seq"], batch["label"].to(torch.float32)
-        logits = self.forward(x) 
-        loss = self.loss(logits, y.long())
+        logits = self.forward(batch.x, batch.edge_index, batch.batch) #[num_graphs, num_classes]
+        loss = self.loss(logits, batch.y.long()) #[dim(y) == num_classes]
         probs = torch.softmax(logits, dim=1)
-        breakpoint() 
-        return {'labels': y, 'logits': logits, 'probs': probs, 'val_loss': loss}
+        self.log({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss})
+        return {'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss} #TODO - See if I can remove this
 
     def validation_epoch_end(self, outputs):
         """
@@ -278,8 +277,8 @@ class GNNTask(pl.LightningModule):
         for metric_name, metric_value in metrics.items():
             self.log(f'test_{metric_name}', metric_value)
         metrics['default'] = metrics['auprc']
-
-        return {'avg_test_loss': avg_loss}
+        self.log({'avg_test_loss': avg_loss})
+        return {'avg_test_loss': avg_loss} #this might not do anything, not supported for newer versions
     
     def configure_optimizers(self):
         learn_rate = self.hparams['learn_rate']
