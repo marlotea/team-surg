@@ -86,12 +86,15 @@ class GNNModel(nn.Module):
         """
         super().__init__()
         gnn_layer = gnn_layer_by_name[layer_name]
-
+        heads = kwargs.pop("attn_heads", 1)
         layers = []
         in_channels, out_channels = c_in, c_hidden
         for l_idx in range(num_layers - 1):
             layers += [
-                gnn_layer(in_channels=in_channels, out_channels=out_channels, **kwargs),
+                gnn_layer(in_channels=in_channels, out_channels=out_channels, heads = heads) 
+                if layer_name == 'GAT' else gnn_layer(in_channels=in_channels, out_channels=out_channels)
+            ]
+            layers += [
                 nn.ReLU(inplace=True),
                 nn.Dropout(dp_rate),
             ]
