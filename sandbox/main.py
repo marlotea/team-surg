@@ -18,10 +18,10 @@ from pathlib import Path
 """
 
 def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "isaacpicov" / "baseline" / "experiments" / "simulation" / "gnn_results"),
-          exp_name="test_2",
+          exp_name="test_1",
           gpus=1, 
           num_classes=3,
-          accelerator='mps',
+          accelerator='gpu',
           gradient_clip_val=0.5,
           max_epochs=100,
           patience=50,
