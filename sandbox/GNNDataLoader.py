@@ -22,7 +22,7 @@ class GNNDataset(Dataset):
         num_frames: int = 150
     ):
         super().__init__()
-        self.dataset = read_pickle(dataset_path)[split][0]
+        self.dataset = read_pickle(dataset_path)[split]
         self.exclude_groups = exclude_groups
         self.num_frames = num_frames
     
@@ -97,7 +97,7 @@ class GNNDataset(Dataset):
     
     
     def prepare_dataset(self, idx: int) -> Tuple[torch.Tensor,torch.Tensor, float]:
-        frames = self.dataset[idx]
+        frames = self.dataset[idx][0]
         filtered_joint_list = GNNDataset.get_filtered_joint_list(self.exclude_groups)
         filtered_edges = GNNDataset.filter_edges(filtered_joint_list)
         edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames)

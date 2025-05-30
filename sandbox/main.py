@@ -6,6 +6,7 @@ from util import init_exp_folder, Args, get_ckpt_callback, get_early_stop_callba
 from model import get_task, load_task
 import json 
 import pickle 
+from pathlib import Path
 
 """ 
 - Number of MLP blocks
@@ -16,16 +17,16 @@ import pickle
 - Trying out solely 3D joints 
 """
 
-def train(save_dir="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_results",
-          exp_name="test_1",
+def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "isaacpicov" / "baseline" / "experiments" / "simulation" / "gnn_results"),
+          exp_name="test_2",
           gpus=1, 
           num_classes=3,
-          accelerator='gpu',
+          accelerator='mps',
           gradient_clip_val=0.5,
           max_epochs=100,
           patience=50,
           limit_train_batches=1.0,
-          tb_path="/pasteur/u/bencliu/baseline/experiments/simulation/gnn_results/tb", 
+          tb_path=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "isaacpicov" / "baseline" / "experiments" / "simulation" / "gnn_results" / "tb"), 
           loss_fn="BCE",
           learn_rate=1e-4,
           batch_size=32,
