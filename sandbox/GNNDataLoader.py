@@ -93,7 +93,7 @@ class GNNDataset(Dataset):
         joint_indices = [MAIN_JOINTS.index(joint) for joint in joints_list]
         reshaped_frames = GNNDataset.reshape_joints(frames)
         reshaped_frames = reshaped_frames[:, joint_indices]
-        return torch.from_numpy(reshaped_frames.reshape(reshaped_frames.shape[0], reshaped_frames[1]*3))
+        return torch.from_numpy(reshaped_frames.reshape(reshaped_frames.shape[0], reshaped_frames.shape[1]*3))
     
     
     def prepare_dataset(self, idx: int) -> Tuple[torch.Tensor,torch.Tensor, float]:
