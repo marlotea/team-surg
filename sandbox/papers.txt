@@ -1,0 +1,6 @@
+Original GAT paper - 8 attn heads for hidden layers, 1 for final layer concat on final layer is False
+GATCheck - Suggests that more heads in the output layer and fewer in the hidden layers can be benefical
+GAT-Li - Suggests adding more heads to the first layers of the graph yield better results
+High-Order Attentive Graph Neural Network for Session-Based Recommendation - Says that attn head tuning matters a lot 
+Graphormer - Use traditional attention mechanism, larger networks have greater benefits 
+Graph Enhanced Bert for Quert Understand - Attatches GNN to BERT, we could attatch transformers to this?

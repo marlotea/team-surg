@@ -18,8 +18,8 @@ class GNNDataset(Dataset):
         self, 
         dataset_path: str, 
         split: str, 
-        exclude_groups: List[str], 
-        num_frames = 150
+        exclude_groups: List[str] =[], 
+        num_frames: int = 150
     ):
         super().__init__()
         self.dataset = read_pickle(dataset_path)[split]
@@ -106,74 +106,3 @@ class GNNDataset(Dataset):
         return x, edge_list, y
 
 
-class GNNDataModule(LightningDataModule):
-    def __init__(
-        self,
-        dataset_path: str,
-        exclude_groups: List[str],
-        batch_size: int = 32,
-        num_frames: int = 150,
-        num_workers: int = 4,
-        pin_memory: bool = True,
-    ):
-        super().__init__()
-        self.dataset_path = dataset_path
-        self.exclude_groups = exclude_groups
-        self.batch_size = batch_size
-        self.num_frames = num_frames
-        self.num_workers = num_workers
-        self.pin_memory = pin_memory
-
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
-
-    def setup(self, stage=None):
-        # Load datasets for each split
-        self.train_dataset = GNNDataset(
-            dataset_path=self.dataset_path,
-            split='train',
-            exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
-        )
-
-        self.val_dataset = GNNDataset(
-            dataset_path=self.dataset_path,
-            split='val',
-            exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
-        )
-
-        self.test_dataset = GNNDataset(
-            dataset_path=self.dataset_path,
-            split='test',
-            exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
-        )
-
-    def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory
-        )

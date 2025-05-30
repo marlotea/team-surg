@@ -49,6 +49,11 @@ Implementation Breakdown:
     - Tuning Params:
         - c_hidden
         - num_layers 
+        - num_attn_heads
+        - Learning rate scheduler, optimal learning rate
+        - GAT vs GCN
+        - Add edge features?
+        - Experiment with the readout MLP
         - [Meta] adjacency contruction
             - weights
             - number of connections
@@ -64,6 +69,7 @@ class GNNModel(nn.Module):
         num_layers=2,
         layer_name="GCN",
         dp_rate=0.1,
+        batch = None,
         **kwargs,
     ):
         """GNNModel.
@@ -90,11 +96,12 @@ class GNNModel(nn.Module):
                 nn.Dropout(dp_rate),
             ]
             in_channels = c_hidden
-        layers += [gnn_layer(in_channels=in_channels, out_channels=c_out, **kwargs)]
-        breakpoint() 
+        self.classifier = nn.Linear(c_hidden, c_out) #Embedding
+        self.pooling = geom_nn.global_mean_pool
         self.layers = nn.ModuleList(layers)
+        
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, batch = None):
         """Forward.
 
         Args:
@@ -102,18 +109,20 @@ class GNNModel(nn.Module):
             edge_index: List of vertex index pairs representing the edges in the graph (PyTorch geometric notation)
 
         """
+        if batch is None:
+            batch = torch.zeros(x.size(0), dtype=torch.float32, device=x.device) #try bfloat16
+            
+        
         for layer in self.layers:
             # For graph layers, we need to add the "edge_index" tensor as additional input
             # All PyTorch Geometric graph layer inherit the class "MessagePassing", hence
             # we can simply check the class type.
-            breakpoint() 
             if isinstance(layer, geom_nn.MessagePassing):
                 x = layer(x, edge_index)
-                breakpoint() 
             else:
                 x = layer(x)
-                breakpoint() 
-        return x
+        x = self.pooling(x, batch)
+        return self.classifier(x)
 
 def gnn_sandbox_function():
     model = GNNModel() 

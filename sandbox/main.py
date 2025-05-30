@@ -19,29 +19,34 @@ import pickle
 def train(save_dir="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_results",
           exp_name="test_1",
           gpus=1, 
-          pretrained=True,
           num_classes=3,
-          accelerator=None,
+          accelerator='gpu',
           gradient_clip_val=0.5,
           max_epochs=100,
           patience=50,
           limit_train_batches=1.0,
-          tb_path="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_results/tb", 
+          tb_path="/pasteur/u/bencliu/baseline/experiments/simulation/gnn_results/tb", 
           loss_fn="BCE",
           learn_rate=1e-4,
-          batch_size=16,
+          batch_size=32,
           optimizer="Adam",
-          dataset_path="", 
-          proj_name="hmr-mixer", 
-          weight_decay=0, 
-          embedd_dim=381,
-          seq_len=50, 
-          num_mlp_blocks=8,
-          mlp_ratio=(0.5, 4.0), 
-          dropout_prob=0.0, 
+          dataset_path="action_dataset_joints_leg_sampled_150.pkl", 
+          proj_name="hmr-gnn", 
+          dp_rate=0.1, 
           metrics_strategy="weighted",
-          oversample=False 
-          ):
+          oversample=False, 
+          c_in = 3,
+          c_hidden = 128, 
+          attn_heads = 1, 
+          num_layers = 5, 
+          layer_name = 'GCN', 
+          num_frames = 150, 
+          exclude_groups = [],
+          num_workers = 4, 
+          pin_memory= True
+          ): 
+   
+   
     """
     Run Trainer 
     """
@@ -53,15 +58,18 @@ def train(save_dir="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_res
     logger = get_logger(save_dir, exp_name, wandb_hps=wandb_hps, project=proj_name)
     if gpus > 1:
         accelerator='ddp'
+         
+        
     trainer = Trainer(gpus=gpus,
                       accelerator=accelerator,
+                      precision="bf16-mixed",
                       logger=logger,
                       callbacks=[get_early_stop_callback(patience),
                                  get_ckpt_callback(save_dir, exp_name, "ckpt")],
                       weights_save_path=os.path.join(save_dir, exp_name),
                       gradient_clip_val=gradient_clip_val,
                       limit_train_batches=limit_train_batches,
-                      max_epochs=max_epochs,
+                      max_epochs=1,
                       )
     trainer.fit(task)
     test(exp_dir_path=exp_dir_path) 
