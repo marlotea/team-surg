@@ -19,7 +19,7 @@ from pathlib import Path
 
 def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "isaacpicov" / "baseline" / "experiments" / "simulation" / "gnn_results"),
           exp_name="test_1",
-          gpus=1, 
+          devices=1, 
           num_classes=3,
           accelerator='gpu',
           gradient_clip_val=0.5,
@@ -57,11 +57,11 @@ def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "is
     wandb_hps = {"hp" : 0} # Add hyperparams 
     exp_dir_path = os.path.join(save_dir, exp_name)
     logger = get_logger(save_dir, exp_name, wandb_hps=wandb_hps, project=proj_name)
-    if gpus > 1:
+    if devices > 1:
         accelerator='ddp'
          
         
-    trainer = Trainer(devices=gpus,
+    trainer = Trainer(devices=devices,
                       accelerator=accelerator,
                       precision="bf16-mixed",
                       logger=logger,
@@ -114,7 +114,7 @@ def test(ckpt_path=None,
     args_dict['results_path'] = results_path 
     args_dict['save_path'] = indiv_save_path 
     args_dict['save_error_analysis'] = save_error_analysis 
-    trainer = Trainer(gpus=1, logger=logger)
+    trainer = Trainer(devices=1, accelerator='gpu', logger=logger)
     task = load_task(ckpt_path, **args_dict) 
     trainer.test(task)
 
