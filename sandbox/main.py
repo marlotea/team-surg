@@ -71,7 +71,7 @@ def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "is
                       gradient_clip_val=gradient_clip_val,
                       limit_train_batches=limit_train_batches,
                       max_epochs=1,
-                      num_sanity_val_steps=0,
+                    #   num_sanity_val_steps=0,
                       )
     trainer.fit(task)
     test(exp_dir_path=exp_dir_path) 
