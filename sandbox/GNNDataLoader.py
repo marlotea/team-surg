@@ -97,12 +97,12 @@ class GNNDataset(Dataset):
     
     
     def prepare_dataset(self, idx: int) -> Tuple[torch.Tensor,torch.Tensor, float]:
-        frames = self.dataset[idx][0]
+        frames = self.dataset[idx]
         filtered_joint_list = GNNDataset.get_filtered_joint_list(self.exclude_groups)
         filtered_edges = GNNDataset.filter_edges(filtered_joint_list)
         edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames)
-        x = GNNDataset.build_node_list(self.exclude_groups, frames)
-        y = torch.from_numpy(frames[-2]).float() #action label 
+        x = GNNDataset.build_node_list(self.exclude_groups, frames[0]) #numpy array
+        y = torch.tensor(frames[-2], dtype=torch.long) #action label 
         return x, edge_list, y
 
 
