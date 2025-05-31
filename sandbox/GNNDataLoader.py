@@ -33,6 +33,7 @@ class GNNDataset(Dataset):
     
     def __getitem__(self, idx: int) -> Data:
         x, edge_list, y = self.prepare_dataset(idx)
+        assert edge_list.max() < x.shape[0]
         return Data(x=x, edge_index=edge_list, y=y)
         
     @staticmethod
