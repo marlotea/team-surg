@@ -226,8 +226,6 @@ class GNNTask(pl.LightningModule):
         probs = torch.softmax(logits, dim=1)
         if not hasattr(self, "val_outputs"):
             self.val_outputs = []
-        self.log("val_loss", loss)
-        self.log("probs", probs)
         self.val_outputs.append({'labels': batch.y, 'logits': logits, 'probs': probs, 'val_loss': loss})
         
 
@@ -276,8 +274,7 @@ class GNNTask(pl.LightningModule):
         probs = torch.softmax(logits, dim=1)
         if not hasattr(self, "test_outputs"):
             self.test_outputs = []
-        self.log("test_loss", loss)
-        self.log("probs", probs)
+            
         self.test_outputs.append({'labels': batch.y, 'logits': logits, 'probs': probs, 'test_loss': loss})
 
     def on_test_epoch_end(self, outputs):
