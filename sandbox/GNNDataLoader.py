@@ -33,7 +33,6 @@ class GNNDataset(Dataset):
     
     def __getitem__(self, idx: int) -> Data:
         x, edge_list, y = self.prepare_dataset(idx)
-        assert edge_list.max() < x.shape[0]
         return Data(x=x, edge_index=edge_list, y=y)
         
     @staticmethod
@@ -94,7 +93,7 @@ class GNNDataset(Dataset):
         joint_indices = [MAIN_JOINTS.index(joint) for joint in joints_list]
         reshaped_frames = GNNDataset.reshape_joints(frames)
         reshaped_frames = reshaped_frames[:, joint_indices]
-        return torch.from_numpy(reshaped_frames.reshape(reshaped_frames.shape[0], reshaped_frames.shape[1]*3))
+        return torch.from_numpy(reshaped_frames.reshape(-1,3)).float()
     
     
     def prepare_dataset(self, idx: int) -> Tuple[torch.Tensor,torch.Tensor, float]:
@@ -102,8 +101,8 @@ class GNNDataset(Dataset):
         filtered_joint_list = GNNDataset.get_filtered_joint_list(self.exclude_groups)
         filtered_edges = GNNDataset.filter_edges(filtered_joint_list)
         edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames)
-        x = GNNDataset.build_node_list(self.exclude_groups, frames).reshape(-1,3)
-        y = frames[-2] #action label 
+        x = GNNDataset.build_node_list(self.exclude_groups, frames)
+        y = torch.from_numpy(frames[-2]).float() #action label 
         return x, edge_list, y
 
 
