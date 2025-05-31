@@ -18,7 +18,7 @@ from pathlib import Path
 """
 
 def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "isaacpicov" / "baseline" / "experiments" / "simulation" / "gnn_results"),
-          exp_name="test_1",
+          exp_name="real_test_1",
           devices=1, 
           num_classes=3,
           accelerator='gpu',
@@ -70,7 +70,7 @@ def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "is
                       default_root_dir=os.path.join(save_dir, exp_name),
                       gradient_clip_val=gradient_clip_val,
                       limit_train_batches=limit_train_batches,
-                      max_epochs=1,
+                      max_epochs=max_epochs,
                     #   num_sanity_val_steps=0,
                       )
     trainer.fit(task)
