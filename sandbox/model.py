@@ -19,8 +19,7 @@ def get_task(args):
     return GNNTask(args)
 
 def load_task(ckpt_path, **kwargs):
-    task = GNNTask(kwargs)
-    return task.load_from_checkpoint(ckpt_path, **kwargs)
+    GNNTask.load_from_checkpoint(ckpt_path, **kwargs)
 
 class MixerTask(pl.LightningModule):
     """Standard interface for the trainer to interact with the model."""
