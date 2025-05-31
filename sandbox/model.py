@@ -249,7 +249,7 @@ class GNNTask(pl.LightningModule):
         # Concatenate predictions
         labels = torch.cat([batch['labels'] for batch in self.val_outputs])
         probs = torch.cat([batch['probs'] for batch in self.val_outputs])
-        losses = torch.stack([o["loss"] for o in self.val_outputs]).mean()
+        losses = torch.stack([o["val_loss"] for o in self.val_outputs]).mean()
         
         self.log("avg_validation_loss", losses)
 
@@ -297,7 +297,7 @@ class GNNTask(pl.LightningModule):
             # Concatenate predictions
             labels = torch.cat([batch['labels'] for batch in self.val_outputs])
             probs = torch.cat([batch['probs'] for batch in self.val_outputs])
-            losses = torch.stack([batch["loss"] for batch in self.val_outputs]).mean()
+            losses = torch.stack([batch["test_loss"] for batch in self.val_outputs]).mean()
 
             # Compute metrics
             self.log("avg_test_loss", losses)
