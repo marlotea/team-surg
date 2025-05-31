@@ -276,7 +276,7 @@ class GNNTask(pl.LightningModule):
             
         self.test_outputs.append({'labels': batch.y, 'logits': logits, 'probs': probs, 'test_loss': loss})
 
-    def on_test_epoch_end(self, outputs):
+    def on_test_epoch_end(self):
             """
         Aggregate and return the validation metrics
         Args:
@@ -290,13 +290,13 @@ class GNNTask(pl.LightningModule):
                               and metrics.csv
         """
             print('test epoch end')
-            if not hasattr(self, "test_outputs") or len(self.val_outputs) == 0:
+            if not hasattr(self, "test_outputs") or len(self.test_outputs) == 0:
                 return
 
             # Concatenate predictions
-            labels = torch.cat([batch['labels'] for batch in self.val_outputs])
-            probs = torch.cat([batch['probs'] for batch in self.val_outputs])
-            losses = torch.stack([batch["test_loss"] for batch in self.val_outputs]).mean()
+            labels = torch.cat([batch['labels'] for batch in self.test_outputs])
+            probs = torch.cat([batch['probs'] for batch in self.test_outputs])
+            losses = torch.stack([batch["test_loss"] for batch in self.test_outputs]).mean()
 
             # Compute metrics
             self.log("avg_test_loss", losses)
@@ -312,7 +312,7 @@ class GNNTask(pl.LightningModule):
                 self.log(f'val_{metric_name}', metric_value, prog_bar=True)
 
             # Clean up memory
-            del self.val_outputs
+            del self.test_outputs
     
     def configure_optimizers(self):
         learn_rate = self.hparams['learn_rate']
