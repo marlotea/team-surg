@@ -116,7 +116,7 @@ def test(ckpt_path=None,
     args_dict['save_error_analysis'] = save_error_analysis 
     trainer = Trainer(devices=1, accelerator='gpu', logger=logger)
     task = load_task(ckpt_path, **args_dict) 
-    trainer.test(task)
+    trainer.test(model = task)
 
 def train_wrapper(save_dir="/pasteur/u/bencliu/baseline/experiments/simulation/mixer_results",
           exp_name="test_1",
