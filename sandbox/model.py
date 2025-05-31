@@ -202,8 +202,8 @@ class GNNTask(pl.LightningModule):
                               attn_heads = self.attn_heads) #additional kwarg
         self.loss = nn.CrossEntropyLoss()
         
-    def forward(self, x, edge_index):
-       return self.model(x, edge_index)
+    def forward(self, x, edge_index, batch):
+       return self.model(x, edge_index, batch)
    
     def training_step(self, batch, batch_nb):
         """
