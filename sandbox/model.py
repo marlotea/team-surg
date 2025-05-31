@@ -365,7 +365,7 @@ class GNNTask(pl.LightningModule):
         return GeoDataLoader( 
             dataset=val_dataset,
             batch_size=self.batch_size,
-            shuffle=True,
+            shuffle=False,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory)
        
