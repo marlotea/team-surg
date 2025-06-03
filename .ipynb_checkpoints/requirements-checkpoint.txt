@@ -10,4 +10,4 @@ seaborn
 scikit-spatial
 numpy
 scikit-learn
-wandb>=0.12.10
+scipy
