@@ -90,32 +90,33 @@ class Args(dict):
 
 def init_exp_folder(args):
     save_dir = os.path.abspath(args.get("save_dir"))
-    exp_name = args.get("exp_name")
+    exp_name_base = args.get("exp_name")
+    exp_name = exp_name_base
     exp_path = join(save_dir, exp_name)
+
+    # Auto-increment exp_name if path already exists
+    run_id = 1
+    while os.path.exists(exp_path):
+        run_id += 1
+        exp_name = f"{exp_name_base}_run{run_id}"
+        exp_path = join(save_dir, exp_name)
+
+    # Update args with the new name
+    args["exp_name"] = exp_name
     exp_metrics_path = join(exp_path, "metrics.csv")
     exp_tb_path = join(exp_path, "tb")
     global_tb_path = args.get("tb_path")
     global_tb_exp_path = join(global_tb_path, exp_name)
 
-    # init exp path
-    if os.path.exists(exp_path):
-        raise FileExistsError(f"Experiment path [{exp_path}] already exists!")
-    os.makedirs(exp_path, exist_ok=True)
-
-    os.makedirs(global_tb_path, exist_ok=True)
-    if os.path.exists(global_tb_exp_path):
-        raise FileExistsError(f"Experiment exists in the global "
-                              f"Tensorboard path [{global_tb_path}]!")
+    # Create necessary directories
+    os.makedirs(exp_path, exist_ok=False)
     os.makedirs(global_tb_path, exist_ok=True)
 
-    # dump hyper-parameters/arguments
-    with open(join(save_dir, exp_name, "args.json"), "w") as f:
-        json.dump(args, f)
+    # Save arguments
+    with open(join(exp_path, "args.json"), "w") as f:
+        json.dump(args, f, indent=4)
 
-    # ln -s for metrics
-    os.symlink(join(exp_path, LIGHTNING_METRICS_PATH),
-               exp_metrics_path)
-
-    # ln -s for tb
+    # Create symbolic links for metrics and tensorboard logs
+    os.symlink(join(exp_path, LIGHTNING_METRICS_PATH), exp_metrics_path)
     os.symlink(join(exp_path, LIGHTNING_TB_PATH), exp_tb_path)
     os.symlink(exp_tb_path, global_tb_exp_path)
