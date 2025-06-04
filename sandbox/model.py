@@ -188,6 +188,8 @@ class GNNTask(pl.LightningModule):
         #Dataset kwargs
         self.num_frames = self.hparams.get("num_frames", 150)
         self.exclude_groups = self.hparams.get("exclude_groups", [])
+        self.temporal_exclusions = self.hparams.get("temporal_exclusions", False)
+        self.filtered_temporal_edges = self.hparams.get("filtered_temporal_edges", None)
         
         #Dataloader kwargs
         self.batch_size = self.hparams.get("batch_size", 32)

@@ -44,7 +44,9 @@ def train(save_dir=str(Path.home() / "Desktop" / "AlgoverseResearch" / "u" / "is
           num_frames = 150, 
           exclude_groups = [],
           num_workers = 4, 
-          pin_memory= True
+          pin_memory= True,
+          temporal_exclusions=False,
+          filtered_temporal_edges=None,
           ): 
    
    

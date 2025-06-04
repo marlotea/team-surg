@@ -18,10 +18,14 @@ class GNNDataset(Dataset):
         self, 
         dataset_path: str, 
         split: str, 
-        exclude_groups: List[str] =[], 
+        exclude_groups: List[str] = [],
+        temporal_exclusions: bool = False,
+        filtered_temporal_edges: List[str] = [],
         num_frames: int = 150
     ):
         super().__init__()
+        self.temporal_exclusions = temporal_exclusions
+        self.filtered_temporal_edges = filtered_temporal_edges
         self.dataset = read_pickle(dataset_path)[split]
         self.exclude_groups = exclude_groups
         self.num_frames = num_frames
@@ -61,7 +65,8 @@ class GNNDataset(Dataset):
 
 
     @staticmethod
-    def build_edge_list(joint_list: List[str], filtered_spatial_edges: List[str], num_frames=150) -> torch.Tensor:
+    def build_edge_list(joint_list: List[str], filtered_spatial_edges: List[str], num_frames=150,
+                        temporal_exclusions: bool=False, filtered_temporal_edges: List[str]=None) -> torch.Tensor:
         joint_idx = {name: i for i, name in enumerate(joint_list)}
         N = len(joint_list)
         total_nodes = N * num_frames
@@ -80,9 +85,18 @@ class GNNDataset(Dataset):
             # temporal connections between same joints across frames
             if t < num_frames - 1:
                 next_offset = (t + 1) * N
-                for i in range(N):
-                    rows += [offset + i, next_offset + i]
-                    cols += [next_offset + i, offset + i]
+
+                if not temporal_exclusions:
+                    # add temporal connections for all joints
+                    for i in range(N):
+                        rows += [offset + i, next_offset + i]
+                        cols += [next_offset + i, offset + i]
+                elif filtered_temporal_edges is not None:
+                    # add temporal connections for filtered joints
+                    for a in filtered_temporal_edges:
+                        i, j = joint_idx[a] + offset, joint_idx[a] + next_offset
+                        rows += [i, j]
+                        cols += [j, i]
 
         return torch.tensor([rows, cols], dtype = torch.long)
 
@@ -100,7 +114,8 @@ class GNNDataset(Dataset):
         frames = self.dataset[idx]
         filtered_joint_list = GNNDataset.get_filtered_joint_list(self.exclude_groups)
         filtered_edges = GNNDataset.filter_edges(filtered_joint_list)
-        edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames)
+        edge_list = GNNDataset.build_edge_list(filtered_joint_list, filtered_edges, self.num_frames,
+                                               self.temporal_exclusions, self.filtered_temporal_edges)
         x = GNNDataset.build_node_list(self.exclude_groups, frames[0]) #numpy array
         y = torch.tensor(frames[-2], dtype=torch.long) #action label 
         return x, edge_list, y
