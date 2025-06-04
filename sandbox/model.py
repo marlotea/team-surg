@@ -332,7 +332,9 @@ class GNNTask(pl.LightningModule):
             dataset_path=self.dataset_path, 
             split='train', 
             exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
+            num_frames=self.num_frames,
+            temporal_exclusions=self.temporal_exclusions,
+            filtered_temporal_edges=self.filtered_temporal_edges
             )
         return GeoDataLoader( 
             dataset=train_dataset,
@@ -346,7 +348,9 @@ class GNNTask(pl.LightningModule):
             dataset_path=self.dataset_path, 
             split='test', 
             exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
+            num_frames=self.num_frames,
+            temporal_exclusions=self.temporal_exclusions,
+            filtered_temporal_edges=self.filtered_temporal_edges
             )
         return GeoDataLoader( 
             dataset=train_dataset,
@@ -360,7 +364,9 @@ class GNNTask(pl.LightningModule):
             dataset_path=self.dataset_path, 
             split='valid', 
             exclude_groups=self.exclude_groups,
-            num_frames=self.num_frames
+            num_frames=self.num_frames,
+            temporal_exclusions=self.temporal_exclusions,
+            filtered_temporal_edges=self.filtered_temporal_edges
             )
         return GeoDataLoader( 
             dataset=val_dataset,
