@@ -99,9 +99,24 @@ class GNNModel(nn.Module):
                 nn.Dropout(dp_rate),
             ]
             in_channels = c_hidden
-        self.classifier = nn.Linear(c_hidden, c_out) #Embedding
+        self.classifier = nn.Linear(c_hidden, 3)
         self.pooling = geom_nn.global_mean_pool
         self.layers = nn.ModuleList(layers)
+        self.readout_mlp = nn.Sequential(
+            nn.Linear(c_hidden, 128),
+            nn.ReLU(),
+            nn.Dropout(dp_rate),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(dp_rate),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Dropout(dp_rate),
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.Dropout(dp_rate),
+            nn.Linear(16, c_out)
+        )
         
 
     def forward(self, x, edge_index, batch = None):
@@ -125,7 +140,10 @@ class GNNModel(nn.Module):
             else:
                 x = layer(x)
         x = self.pooling(x, batch)
+
         return self.classifier(x)
+        # MLP Ablation
+        # return self.readout_mlp(x)
 
 def gnn_sandbox_function():
     model = GNNModel() 
@@ -230,6 +248,15 @@ class MlpMixer(nn.Module):
             )
             for _ in range(num_blocks)])
         self.norm = norm_layer(hmr_embedd_dim)
+        self.readout_mlp = nn.Sequential(
+            nn.Linear(hmr_embedd_dim, 256),
+            nn.GELU(),
+            nn.Dropout(drop_rate),
+            nn.Linear(256, 64),
+            nn.GELU(),
+            nn.Dropout(drop_rate),
+            nn.Linear(64, self.num_classes)
+        )
         self.head_drop = nn.Dropout(drop_rate)
         self.head = nn.Linear(hmr_embedd_dim, self.num_classes) if num_classes > 0 else nn.Identity()
 
@@ -264,6 +291,8 @@ class MlpMixer(nn.Module):
         if self.global_pool == 'avg':
             x = x.mean(dim=1)
         x = self.head_drop(x)
+        # MLP Ablations
+        # return x if pre_logits else self.readout_mlp(x)
         return x if pre_logits else self.head(x)
 
     def forward(self, x):
